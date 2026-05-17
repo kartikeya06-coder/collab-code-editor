@@ -1,0 +1,23 @@
+@import "tailwindcss";
+
+body, html {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  
+}
+
+/* The highlighted text area from another user */
+.yRemoteSelection {
+  background-color: rgba(250, 129, 0, 0.4); /* Orange with 40% transparency */
+}
+
+/* The actual blinking cursor line of another user */
+.yRemoteSelectionHead {
+  position: absolute;
+  border-left: 2px solid #fa8100; /* Solid orange line */
+  height: 100%;
+  box-sizing: border-box;
+}
