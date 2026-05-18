@@ -13,6 +13,37 @@ export default function CodeEditor({ roomId }) {
 
     const [initialCode, setInitialCode] = useState('// Loading...');
 
+    const [output, setOutput] = useState('');
+    const [isExecuting, setIsExecuting] = useState(false);
+
+    // NEW FUNCTION: Send code to the backend
+    const handleRunCode = async () => {
+        if (!editorRef.current) return;
+
+        setIsExecuting(true);
+        setOutput('Executing in secure container...');
+
+        // Grab the current text directly from Monaco
+        const currentCode = editorRef.current.getValue();
+
+        try {
+            const response = await axios.post('http://localhost:5000/api/execute', {
+                code: currentCode,
+                language: 'javascript'
+            });
+
+            if (response.data.error) {
+                setOutput(`⚠️ Error: ${response.data.error}`);
+            } else {
+                setOutput(response.data.output || 'Code executed successfully with no output.');
+            }
+        } catch (error) {
+            setOutput('⚠️ Failed to connect to execution server.');
+        } finally {
+            setIsExecuting(false);
+        }
+    };
+
     // Fetch initial code from MongoDB
     useEffect(() => {
         const fetchDocument = async () => {
@@ -76,7 +107,8 @@ export default function CodeEditor({ roomId }) {
     }, []);
 
     return (
-        <div className="h-screen w-screen grid grid-rows-[50px_1fr] bg-[#1e1e1e] overflow-hidden">
+        <div className="h-screen w-screen grid grid-rows-[50px_1fr_200px] bg-[#1e1e1e] overflow-hidden">
+            {/* HEADER DIV */}
             <div className="flex items-center justify-between px-4 bg-[#252526] text-[#cccccc] border-b border-[#333] text-sm font-sans">
                 <div>
                     <strong className="text-white">Room:</strong> {roomId}
@@ -85,24 +117,37 @@ export default function CodeEditor({ roomId }) {
                     <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse"></span>
                     <strong>Status:</strong> Live
                 </div>
+                <button
+                    onClick={handleRunCode}
+                    disabled={isExecuting}
+                    className="bg-green-600 hover:bg-green-500 text-white px-4 py-1.5 rounded text-xs font-bold uppercase tracking-wider transition-colors disabled:opacity-50"
+                >
+                    {isExecuting ? 'Running...' : 'Run Code'}
+                </button>
+            </div>
+            {/* EDITOR DIV */}
+            <div className='w-full h-full min-h-0 relative'>
+                <Editor
+                    height="100%"
+                    width="100%"
+                    theme="vs-dark"
+                    language="javascript"
+                    value={initialCode}
+                    beforeMount={handleEditorWillMount}
+                    onMount={handleEditorDidMount}
+                    options={{
+                        minimap: { enabled: false },
+                        fontSize: 14,
+                        wordWrap: 'on',
+                        automaticLayout: true,
+                    }}
+                />
             </div>
 
-            <div className='w-full h-full min-h-0 relative'>
-            <Editor
-                height="100%"
-                width="100%"
-                theme="vs-dark"
-                language="javascript"
-                value={initialCode}
-                beforeMount={handleEditorWillMount}
-                onMount={handleEditorDidMount}
-                options={{
-                    minimap: { enabled: false },
-                    fontSize: 14,
-                    wordWrap: 'on',
-                    automaticLayout: true,
-                }}
-            />
+            {/* CONSOLE DIV */}
+            <div className="w-full h-full min-h-0 bg-[#1e1e1e] p-4 font-mono text-sm overflow-y-auto">
+                <div className="text-gray-500 mb-2 font-bold uppercase text-xs tracking-widest">Terminal Output</div>
+                <pre className="text-gray-300 whitespace-pre-wrap">{output}</pre>
             </div>
 
         </div>

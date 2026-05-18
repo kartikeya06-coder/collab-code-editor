@@ -12,8 +12,8 @@ app.use(express.json());
 
 // 1. Connect to MongoDB
 mongoose.connect('mongodb://127.0.0.1:27017/code-platform')
-.then(() => console.log('MongoDB Connected Successfully'))
-.catch(err => console.error('MongoDB Connection Error:', err));
+  .then(() => console.log('MongoDB Connected Successfully'))
+  .catch(err => console.error('MongoDB Connection Error:', err));
 
 // 2. Express Routes
 // Fetch or create a document when a user joins a room
@@ -50,6 +50,25 @@ wss.on('connection', (ws, req) => {
   console.log('New WebSocket connection established');
   // y-websocket takes over this socket to sync the Y.js document
   setupWSConnection(ws, req);
+});
+
+const { executeJavaScript } = require('./services/dockerService');
+
+// Code Execution Endpoint
+app.post('/api/execute', async (req, res) => {
+  const { code, language } = req.body;
+
+  if (!code) {
+    return res.status(400).json({ error: "No code provided" });
+  }
+
+  if (language === 'javascript') {
+    const result = await executeJavaScript(code);
+    return res.json(result);
+  } else {
+    // Later you can add python:alpine, cpp, etc.
+    return res.status(400).json({ error: "Language not supported yet" });
+  }
 });
 
 const PORT = process.env.PORT || 5000;
