@@ -52,23 +52,18 @@ wss.on('connection', (ws, req) => {
   setupWSConnection(ws, req);
 });
 
-const { executeJavaScript } = require('./services/dockerService');
+const { executeCode } = require('./services/dockerService'); // Update the import!
 
-// Code Execution Endpoint
 app.post('/api/execute', async (req, res) => {
   const { code, language } = req.body;
 
-  if (!code) {
-    return res.status(400).json({ error: "No code provided" });
+  if (!code || !language) {
+    return res.status(400).json({ error: "Missing code or language" });
   }
 
-  if (language === 'javascript') {
-    const result = await executeJavaScript(code);
-    return res.json(result);
-  } else {
-    // Later you can add python:alpine, cpp, etc.
-    return res.status(400).json({ error: "Language not supported yet" });
-  }
+  // Pass both arguments to your new engine
+  const result = await executeCode(code, language);
+  return res.json(result);
 });
 
 const PORT = process.env.PORT || 5000;

@@ -4,6 +4,7 @@ import * as Y from 'yjs';
 import { WebsocketProvider } from 'y-websocket';
 import { MonacoBinding } from 'y-monaco';
 import axios from 'axios';
+import Terminal from './Terminal';
 
 export default function CodeEditor({ roomId }) {
     const editorRef = useRef(null);
@@ -15,6 +16,7 @@ export default function CodeEditor({ roomId }) {
 
     const [output, setOutput] = useState('');
     const [isExecuting, setIsExecuting] = useState(false);
+    const [language, setLanguage] = useState('javascript'); // NEW STATE
 
     // NEW FUNCTION: Send code to the backend
     const handleRunCode = async () => {
@@ -29,7 +31,7 @@ export default function CodeEditor({ roomId }) {
         try {
             const response = await axios.post('http://localhost:5000/api/execute', {
                 code: currentCode,
-                language: 'javascript'
+                language: language
             });
 
             if (response.data.error) {
@@ -117,13 +119,26 @@ export default function CodeEditor({ roomId }) {
                     <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse"></span>
                     <strong>Status:</strong> Live
                 </div>
-                <button
-                    onClick={handleRunCode}
-                    disabled={isExecuting}
-                    className="bg-green-600 hover:bg-green-500 text-white px-4 py-1.5 rounded text-xs font-bold uppercase tracking-wider transition-colors disabled:opacity-50"
-                >
-                    {isExecuting ? 'Running...' : 'Run Code'}
-                </button>
+                <div className="flex items-center gap-4">
+                    {/* NEW: Language Selector */}
+                    <select
+                        value={language}
+                        onChange={(e) => setLanguage(e.target.value)}
+                        className="bg-[#3c3c3c] text-white px-2 py-1 rounded text-xs border border-[#555] outline-none cursor-pointer"
+                    >
+                        <option value="javascript">JavaScript (Node)</option>
+                        <option value="cpp">C++ (GCC)</option>
+                    </select>
+
+                    {/* Existing Run Button */}
+                    <button
+                        onClick={handleRunCode}
+                        disabled={isExecuting}
+                        className="bg-green-600 hover:bg-green-500 text-white px-4 py-1.5 rounded text-xs font-bold uppercase tracking-wider transition-colors disabled:opacity-50"
+                    >
+                        {isExecuting ? 'Running...' : 'Run Code'}
+                    </button>
+                </div>
             </div>
             {/* EDITOR DIV */}
             <div className='w-full h-full min-h-0 relative'>
@@ -131,7 +146,7 @@ export default function CodeEditor({ roomId }) {
                     height="100%"
                     width="100%"
                     theme="vs-dark"
-                    language="javascript"
+                    language={language === 'cpp' ? 'cpp' : 'javascript'} // Syntax highlighting update
                     value={initialCode}
                     beforeMount={handleEditorWillMount}
                     onMount={handleEditorDidMount}
@@ -145,9 +160,14 @@ export default function CodeEditor({ roomId }) {
             </div>
 
             {/* CONSOLE DIV */}
-            <div className="w-full h-full min-h-0 bg-[#1e1e1e] p-4 font-mono text-sm overflow-y-auto">
+            {/* <div className="w-full h-full min-h-0 bg-[#1e1e1e] p-4 font-mono text-sm overflow-y-auto">
                 <div className="text-gray-500 mb-2 font-bold uppercase text-xs tracking-widest">Terminal Output</div>
                 <pre className="text-gray-300 whitespace-pre-wrap">{output}</pre>
+            </div> */}
+
+            {/* 3. ROW 3: The Integrated Xterm Terminal */}
+            <div className="w-full h-full min-h-0 bg-[#1e1e1e] border-t border-[#333] relative">
+                <Terminal output={output} />
             </div>
 
         </div>

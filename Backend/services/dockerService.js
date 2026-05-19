@@ -1,49 +1,58 @@
 const Docker = require('dockerode');
-const docker = new Docker(); // Automatically connects to your local Docker daemon
+const docker = new Docker();
 
-async function executeJavaScript(code) {
+async function executeCode(code, language) {
   return new Promise(async (resolve, reject) => {
     try {
-      // 1. Encode code to Base64 to safely pass it into the container shell
-      // This prevents users from breaking the shell command with quotes or special characters
       const base64Code = Buffer.from(code).toString('base64');
-      const command = ['sh', '-c', `echo "${base64Code}" | base64 -d | node`];
+      
+      let image = '';
+      let command = [];
 
-      // 2. Setup a stream to capture the terminal output
+      // 1. The Language Router
+      if (language === 'javascript') {
+        image = 'node:alpine';
+        command = ['sh', '-c', `echo "${base64Code}" | base64 -d | node`];
+      } 
+      else if (language === 'cpp') {
+        image = 'gcc:latest';
+        // For C++: Decode -> Save to main.cpp -> Compile to 'main' -> Execute './main'
+        command = ['sh', '-c', `echo "${base64Code}" | base64 -d > main.cpp && g++ main.cpp -o main && ./main`];
+      } 
+      else {
+        return resolve({ error: "Unsupported language." });
+      }
+
       const outputStream = new require('stream').PassThrough();
       let output = '';
       outputStream.on('data', (chunk) => {
         output += chunk.toString('utf8');
       });
 
-      // 3. THE MOAT: Configure the secure execution sandbox
-      const runPromise = docker.run('node:alpine', command, outputStream, {
+      // 2. Run the secure container with the dynamically selected image
+      const runPromise = docker.run(image, command, outputStream, {
         HostConfig: {
-          Memory: 50 * 1024 * 1024, // 50 MB limit: Stops memory leaks / fork bombs
-          NetworkMode: 'none',      // NO INTERNET: Stops them from downloading malware or DDoS-ing
-          AutoRemove: true,         // Immediately destroys the container after the code finishes
+          Memory: 100 * 1024 * 1024, // Bumped to 100MB (GCC compiler is heavier than Node)
+          NetworkMode: 'none',
+          AutoRemove: true,
         }
       });
 
-      // 4. Implement a strict 5-second timeout (prevents infinite while-loops)
       const timeout = setTimeout(() => {
-        resolve({ error: "Execution Timed Out (Possible Infinite Loop)" });
-      }, 5000);
+        resolve({ error: "Execution Timed Out (Possible Infinite Loop or Slow Compilation)" });
+      }, 10000); // Bumped to 10 seconds because compiling C++ takes a moment
 
-      // Wait for execution to finish
       await runPromise;
       clearTimeout(timeout);
       
-      // Clean the output by stripping ANSI escape codes
-      // This regex matches the exact pattern of terminal color codes
-      const cleanOutput = output.replace(/\x1b\[[0-9;]*m/g, '').trim();
-      
-      // Return the cleaned terminal output
-      resolve({ output: cleanOutput });
-    } catch (error) {
-      reject(error);
+      // If compilation fails, g++ writes to stderr, which our stream naturally captures!
+      resolve({ output: output });
+
+    } catch (err) {
+      console.error("Docker Execution Error:", err);
+      resolve({ error: "Failed to execute code securely." });
     }
   });
 }
 
-module.exports = { executeJavaScript };
+module.exports = { executeCode };
