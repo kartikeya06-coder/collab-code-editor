@@ -5,6 +5,7 @@ import { WebsocketProvider } from 'y-websocket';
 import { MonacoBinding } from 'y-monaco';
 import axios from 'axios';
 import Terminal from './Terminal';
+import MetricsGraph from './MetricsGraph'; // Add to imports
 
 export default function CodeEditor({ roomId }) {
     const editorRef = useRef(null);
@@ -17,6 +18,7 @@ export default function CodeEditor({ roomId }) {
     const [output, setOutput] = useState('');
     const [isExecuting, setIsExecuting] = useState(false);
     const [language, setLanguage] = useState('javascript'); // NEW STATE
+    const [metrics, setMetrics] = useState([]);
 
     // NEW FUNCTION: Send code to the backend
     const handleRunCode = async () => {
@@ -38,6 +40,10 @@ export default function CodeEditor({ roomId }) {
                 setOutput(`⚠️ Error: ${response.data.error}`);
             } else {
                 setOutput(response.data.output || 'Code executed successfully with no output.');
+            }
+            // NEW: Save the telemetry data
+            if (response.data.metrics) {
+                setMetrics(response.data.metrics);
             }
         } catch (error) {
             setOutput('⚠️ Failed to connect to execution server.');
@@ -109,7 +115,7 @@ export default function CodeEditor({ roomId }) {
     }, []);
 
     return (
-        <div className="h-screen w-screen grid grid-rows-[50px_1fr_200px] bg-[#1e1e1e] overflow-hidden">
+        <div className="h-screen w-screen grid grid-rows-[50px_1fr_250px] bg-[#1e1e1e] overflow-hidden">
             {/* HEADER DIV */}
             <div className="flex items-center justify-between px-4 bg-[#252526] text-[#cccccc] border-b border-[#333] text-sm font-sans">
                 <div>
@@ -166,8 +172,18 @@ export default function CodeEditor({ roomId }) {
             </div> */}
 
             {/* 3. ROW 3: The Integrated Xterm Terminal */}
-            <div className="w-full h-full min-h-0 bg-[#1e1e1e] border-t border-[#333] relative">
-                <Terminal output={output} />
+            <div className="w-full h-[250px] grid grid-cols-2 bg-[#1e1e1e] border-t border-[#333] relative">
+
+                {/* Left Side: Xterm Console */}
+                <div className="w-full h-full min-h-0 relative">
+                    <Terminal output={output} />
+                </div>
+
+                {/* Right Side: Recharts Profiler */}
+                <div className="w-full h-full min-h-0 relative">
+                    <MetricsGraph data={metrics} />
+                </div>
+
             </div>
 
         </div>
