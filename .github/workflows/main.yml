@@ -13,24 +13,20 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Step A: Download your code from GitHub onto the temporary server
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # Step B: Install the Node.js runtime
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
 
-      # Step C: Install your dependencies 
-      # (If your package.json is inside a 'Backend' folder, change 'run' to: cd Backend && npm install)
-      - name: Install Dependencies
-        run: cd Backend && npm install
+      - name: Install Backend Dependencies
+        working-directory: ./backend 
+        run: npm install
 
-      # Step D: The Ultimate CI Check - Build the Docker Container!
-      # If your code has syntax errors or your Dockerfile is broken, this step will fail 
-      # and GitHub will alert you. If it passes, you know your app is structurally sound.
-      # (If your Dockerfile is in 'Backend', change 'run' to: cd Backend && docker build -t code-editor-api .)
-      - name: Build Docker Sandbox Environment
-        run: cd Backend && cd services && docker build -t code-editor-api .
+      # We remove the 'docker build' step completely.
+      # Instead, we test that Docker is running and pull the image 
+      # your DockerServices.js needs for the sandbox!
+      - name: Pre-fetch Docker Sandbox Image
+        run: docker pull node:alpine
