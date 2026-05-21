@@ -22,7 +22,7 @@ jobs:
           node-version: '22'
 
       - name: Install Backend Dependencies
-        working-directory: ./backend 
+        working-directory: ./Backend 
         run: npm install
 
       # We remove the 'docker build' step completely.
