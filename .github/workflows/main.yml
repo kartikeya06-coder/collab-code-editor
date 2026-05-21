@@ -26,7 +26,7 @@ jobs:
       # Step C: Install your dependencies 
       # (If your package.json is inside a 'Backend' folder, change 'run' to: cd Backend && npm install)
       - name: Install Dependencies
-        run: npm install
+        run: cd Backend && npm install
 
       # Step D: The Ultimate CI Check - Build the Docker Container!
       # If your code has syntax errors or your Dockerfile is broken, this step will fail 
