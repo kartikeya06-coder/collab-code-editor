@@ -6,8 +6,12 @@ import { MonacoBinding } from 'y-monaco';
 import axios from 'axios';
 import Terminal from './Terminal';
 import MetricsGraph from './MetricsGraph'; // Add to imports
+import { useParams } from 'react-router-dom';
 
-export default function CodeEditor({ roomId }) {
+export default function CodeEditor() {
+
+    const { roomId } = useParams();
+
     const editorRef = useRef(null);
     const providerRef = useRef(null);
     const ydocRef = useRef(null);
