@@ -9,10 +9,10 @@ async function executeCode(code, language) {
       let command = [];
 
       if (language === 'javascript') {
-        image = 'node:alpine';
+        image = 'node:20-alpine';
         command = ['sh', '-c', `echo "${base64Code}" | base64 -d | node`];
       } else if (language === 'cpp') {
-        image = 'gcc:latest';
+        image = 'cpp-sandbox';
         command = ['sh', '-c', `echo "${base64Code}" | base64 -d > main.cpp && g++ main.cpp -o main && ./main`];
       } else {
         return resolve({ error: "Unsupported language." });
